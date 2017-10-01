@@ -34,8 +34,13 @@ def custom_score(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return float(len(game.get_legal_moves(player)))
 
 
 def custom_score_2(game, player):
@@ -162,9 +167,12 @@ class MinimaxPlayer(IsolationPlayer):
         try:
             # The try/except block will automatically catch the exception
             # raised when the timer is about to expire.
-            return self.minimax(game, self.search_depth)
+            # best_move = self.minimax(game, self.search_depth)
+            for i in range(1, self.search_depth):
+                best_move = self.minimax(game, i)
 
         except SearchTimeout:
+            # print(self.time_left)
             pass  # Handle any actions required after timeout as needed
 
         # Return the best move from the last completed search iteration
@@ -211,9 +219,79 @@ class MinimaxPlayer(IsolationPlayer):
         """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
+        # print("minimax", game.active_player)
+        moves = game.get_legal_moves()
+        if not moves:
+            return (-1, -1)
+        move_values = [(m, self.min_value(game.forecast_move(m), depth-1)) for m in moves]
+        max_move = max(move_values, key=lambda x: x[1])
+        return max_move[0]
 
-        # TODO: finish this function!
-        raise NotImplementedError
+    def max_value(self, game, depth):
+        """
+        Determine the max value of all children nodes until
+
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        Returns
+        -------
+        int
+            The max value of all children nodes up to the given dept
+
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+
+        moves = game.get_legal_moves()
+        # print("max", game.active_player)
+        if not moves or depth == 0:
+            return self.score(game, game._active_player)
+        v = float("-inf")
+        for m in moves:
+            v = max(v, self.min_value(game.forecast_move(m), depth - 1))
+        return v
+
+
+    def min_value(self, game, depth):
+        """
+        Determine the min value of all children nodes until
+
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        Returns
+        -------
+        int
+            The min value of all children nodes up to the given dept
+
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        # print("min", game.active_player)
+        moves = game.get_legal_moves()
+
+        if not moves or depth == 0:
+            return self.score(game, game.inactive_player)
+        v = float("inf")
+        for m in moves:
+            v = min(v, self.max_value(game.forecast_move(m), depth - 1))
+        return v
+
 
 
 class AlphaBetaPlayer(IsolationPlayer):

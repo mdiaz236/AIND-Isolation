@@ -336,7 +336,6 @@ class Board(object):
                 if len(legal_player_moves) > 0:
                     return self._inactive_player, move_history, "forfeit"
                 return self._inactive_player, move_history, "illegal move"
-
             move_history.append(list(curr_move))
 
             self.apply_move(curr_move)
