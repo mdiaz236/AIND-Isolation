@@ -65,8 +65,13 @@ def custom_score_2(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return float(len(game.get_legal_moves(player)))
 
 
 def custom_score_3(game, player):
@@ -91,8 +96,13 @@ def custom_score_3(game, player):
     float
         The heuristic value of the current game state to the specified player.
     """
-    # TODO: finish this function!
-    raise NotImplementedError
+    if game.is_loser(player):
+        return float("-inf")
+
+    if game.is_winner(player):
+        return float("inf")
+
+    return float(len(game.get_legal_moves(player)))
 
 
 class IsolationPlayer:
@@ -167,7 +177,6 @@ class MinimaxPlayer(IsolationPlayer):
         try:
             # The try/except block will automatically catch the exception
             # raised when the timer is about to expire.
-            # best_move = self.minimax(game, self.search_depth)
             for i in range(1, self.search_depth):
                 best_move = self.minimax(game, i)
 
@@ -252,7 +261,7 @@ class MinimaxPlayer(IsolationPlayer):
 
         moves = game.get_legal_moves()
         # print("max", game.active_player)
-        if not moves or depth == 0:
+        if len(moves) == 0 or depth == 0:
             return self.score(game, game._active_player)
         v = float("-inf")
         for m in moves:
@@ -285,7 +294,7 @@ class MinimaxPlayer(IsolationPlayer):
         # print("min", game.active_player)
         moves = game.get_legal_moves()
 
-        if not moves or depth == 0:
+        if len(moves) == 0 or depth == 0:
             return self.score(game, game.inactive_player)
         v = float("inf")
         for m in moves:
@@ -332,8 +341,27 @@ class AlphaBetaPlayer(IsolationPlayer):
         """
         self.time_left = time_left
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        # Initialize the best move so that this function returns something
+        # in case the search fails due to timeout
+        best_move = (-1, -1)
+        depth = 1
+        try:
+            # The try/except block will automatically catch the exception
+            # raised when the timer is about to expire.
+            while True:
+                next_move = self.alphabeta(game, depth)
+                if next_move == (-1, -1):
+                    return best_move
+                best_move = next_move
+                if game.forecast_move(best_move).is_winner(game.active_player):
+                    return best_move
+                depth += 1
+
+        except SearchTimeout:
+            return best_move  # Handle any actions required after timeout as needed
+
+        # Return the best move from the last completed search iteration
+        return best_move
 
     def alphabeta(self, game, depth, alpha=float("-inf"), beta=float("inf")):
         """Implement depth-limited minimax search with alpha-beta pruning as
@@ -380,8 +408,98 @@ class AlphaBetaPlayer(IsolationPlayer):
                 each helper function or else your agent will timeout during
                 testing.
         """
+
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        # print("minimax", game.active_player)
+        moves = game.get_legal_moves()
+        if not moves:
+            return (-1, -1)
+        ## make loop that updates alpha and beta
+        best_move = (-1, -1)
+        v = float("-inf")
+        for m in moves:
+            next = self.min_value(game.forecast_move(m), alpha, beta,
+                    depth - 1)
+            if next > v:
+                best_move = m
+                v = next
+            if v >= beta:
+                return best_move
+            alpha = max(alpha, v)
+        return best_move
+
+    def max_value(self, game, alpha, beta, depth):
+        """
+        Determine the max value of all children nodes until
+
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        Returns
+        -------
+        (int, int, int)
+            The min value of all children nodes up to the given dept,
+            the updated alpha and the updated beta
+
+        """
         if self.time_left() < self.TIMER_THRESHOLD:
             raise SearchTimeout()
 
-        # TODO: finish this function!
-        raise NotImplementedError
+        moves = game.get_legal_moves()
+        # print("max", game.active_player)
+        if len(moves) == 0 or depth == 0:
+            return self.score(game, game._active_player)
+        v = float("-inf")
+        for m in moves:
+            v = max(v, self.min_value(game.forecast_move(m), alpha, beta,
+                    depth - 1))
+            if v >= beta:
+                return v
+            alpha = max(alpha, v)
+        return v
+
+
+    def min_value(self, game, alpha, beta, depth):
+        """
+        Determine the min value of all children nodes until
+
+        Parameters
+        ----------
+        game : isolation.Board
+            An instance of the Isolation game `Board` class representing the
+            current game state
+
+        depth : int
+            Depth is an integer representing the maximum number of plies to
+            search in the game tree before aborting
+
+        Returns
+        -------
+        (int, int, int)
+            The min value of all children nodes up to the given dept,
+            the updated alpha and the updated beta
+
+        """
+        if self.time_left() < self.TIMER_THRESHOLD:
+            raise SearchTimeout()
+        # print("min", game.active_player)
+        moves = game.get_legal_moves()
+
+        if len(moves) == 0 or depth == 0:
+            return self.score(game, game.inactive_player)
+        v = float("inf")
+        for m in moves:
+            v = min(v, self.max_value(game.forecast_move(m), alpha,
+                    beta, depth - 1))
+            if v <= alpha:
+                return v
+            beta = min(beta, v)
+        return v
